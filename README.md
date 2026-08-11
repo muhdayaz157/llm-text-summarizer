@@ -1,35 +1,50 @@
 # LLM Text Summarizer
 
-A simple Python-based text summarization tool powered by a Large Language Model (LLM).
+A lightweight Python-based LLM application that generates concise, structured summaries from user-provided text.
 
-The application accepts user-provided text, sends it to an LLM through an API, and returns a concise, structured summary.
+The project demonstrates practical LLM application development including prompt engineering, input validation, API integration, error handling, multi-provider support, and automated testing.
 
 ## Features
 
 - LLM-powered text summarization
 - Reusable `summarize_text()` function
 - Structured prompt engineering
-- Concise bullet-point summaries
+- Consistent bullet-point output
 - Input validation
-- API error handling
+- LLM/API error handling
 - Environment-based API credentials
-- Configurable LLM provider
+- OpenAI and Google Gemini provider support
+- Configurable LLM models
+- Automated tests with pytest
 - Simple command-line interface
 - No database or frontend required
 
-## Project Structure
+## Architecture
 
 ```text
-llm-text-summarizer/
-│
-├── app/
-│   ├── __init__.py
-│   ├── llm_client.py
-│   ├── prompts.py
-│   └── summarizer.py
-│
-├── .env.example
-├── .gitignore
-├── main.py
-├── README.md
-└── requirements.txt
+User Input
+    │
+    ▼
+CLI (main.py)
+    │
+    ▼
+summarize_text()
+    │
+    ├── Input Validation
+    │
+    ▼
+Prompt Construction
+    │
+    ▼
+generate_text()
+    │
+    ├───────────────┐
+    ▼               ▼
+ Gemini           OpenAI
+    │               │
+    └───────┬───────┘
+            ▼
+      Generated Text
+            │
+            ▼
+         Summary
