@@ -2,6 +2,9 @@ from app.llm_client import generate_text
 from app.prompts import SUMMARY_PROMPT
 
 
+MIN_TEXT_LENGTH = 50
+
+
 def summarize_text(text: str) -> str:
     """
     Generate a concise summary of the provided text.
@@ -18,27 +21,19 @@ def summarize_text(text: str) -> str:
         RuntimeError: If the LLM API request fails.
     """
 
-    # Validate data type
     if not isinstance(text, str):
         raise TypeError("Text must be a string.")
 
-    # Remove unnecessary whitespace
     text = text.strip()
 
-    # Validate empty input
     if not text:
         raise ValueError("Text cannot be empty.")
 
-    # Validate minimum length
-    if len(text) < 50:
+    if len(text) < MIN_TEXT_LENGTH:
         raise ValueError(
             "Text is too short to generate a meaningful summary."
         )
 
-    # Build the prompt
     prompt = SUMMARY_PROMPT.format(text=text)
 
-    # Generate summary through configured LLM provider
-    summary = generate_text(prompt)
-
-    return summary
+    return generate_text(prompt)

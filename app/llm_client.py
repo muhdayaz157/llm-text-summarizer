@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 from dotenv import load_dotenv
 from google import genai
@@ -8,14 +9,17 @@ from openai import OpenAI
 load_dotenv()
 
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+SUPPORTED_PROVIDERS = {"gemini", "openai"}
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+DEFAULT_PROVIDER = "gemini"
+DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
+DEFAULT_OPENAI_MODEL = "gpt-5-mini"
 
 
+@lru_cache(maxsize=1)
 def _get_gemini_client():
-    """Create and return a Gemini client."""
+    """Create and cache a Gemini client."""
+
     api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
@@ -30,8 +34,10 @@ def _get_gemini_client():
     )
 
 
+@lru_cache(maxsize=1)
 def _get_openai_client():
-    """Create and return an OpenAI client."""
+    """Create and cache an OpenAI client."""
+
     api_key = os.getenv("OPENAI_API_KEY")
 
     if not api_key:
@@ -47,8 +53,16 @@ def generate_text(prompt: str) -> str:
     """
     Generate text using the configured LLM provider.
 
-    The provider is selected through the LLM_PROVIDER
-    environment variable.
+    Args:
+        prompt: Prompt sent to the selected LLM provider.
+
+    Returns:
+        Generated text from the LLM.
+
+    Raises:
+        TypeError: If prompt is not a string.
+        ValueError: If prompt is empty or provider configuration is invalid.
+        RuntimeError: If the LLM request fails or returns empty output.
     """
 
     if not isinstance(prompt, str):
@@ -59,32 +73,47 @@ def generate_text(prompt: str) -> str:
     if not prompt:
         raise ValueError("Prompt cannot be empty.")
 
+    provider = os.getenv(
+        "LLM_PROVIDER",
+        DEFAULT_PROVIDER,
+    ).strip().lower()
+
+    if provider not in SUPPORTED_PROVIDERS:
+        raise ValueError(
+            f"Unsupported LLM_PROVIDER: '{provider}'. "
+            f"Supported providers: {', '.join(sorted(SUPPORTED_PROVIDERS))}."
+        )
+
     try:
-        if LLM_PROVIDER == "gemini":
+        if provider == "gemini":
             client = _get_gemini_client()
 
+            model = os.getenv(
+                "GEMINI_MODEL",
+                DEFAULT_GEMINI_MODEL,
+            )
+
             interaction = client.interactions.create(
-                model=GEMINI_MODEL,
+                model=model,
                 input=prompt,
             )
 
             output = interaction.output_text
 
-        elif LLM_PROVIDER == "openai":
+        else:
             client = _get_openai_client()
 
+            model = os.getenv(
+                "OPENAI_MODEL",
+                DEFAULT_OPENAI_MODEL,
+            )
+
             response = client.responses.create(
-                model=OPENAI_MODEL,
+                model=model,
                 input=prompt,
             )
 
             output = response.output_text
-
-        else:
-            raise ValueError(
-                f"Unsupported LLM_PROVIDER: '{LLM_PROVIDER}'. "
-                "Use 'gemini' or 'openai'."
-            )
 
         if not output or not output.strip():
             raise RuntimeError(
